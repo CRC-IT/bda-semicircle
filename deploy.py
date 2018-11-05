@@ -20,7 +20,7 @@ from semicircle import semicircle
 
 
 def do_file(csvfile, suffix='_semicircles.shp', to_file=True):
-    """Import csv file of points and parameters and produce a semicircle shapefile.
+    """Import csv file of xy's and parameters then produce a semicircle shapefile.
 
     >>> print(open('example.csv').read())
     x,y,radius,rotation
@@ -59,7 +59,48 @@ def _graphic_test():
     plt.show()
 
 
+import os.path as op
+from glob import glob
+from datetime import datetime
+import time
+
+def watch(folder='//olgwfap1/Transfer/semicircles/', filetype='*.csv',
+          suffix='_semicircles.shp', error='_error.txt', sleep=10, _debug=False):
+    """Watch a folder for new files to process.
+
+    Runs from the command line like:
+    C:\Users\scarborj\Documents\GitHub\bda-semicircle>\Users\scarborj\Documents\venv\bda-semicircle\
+    Scripts\python.exe deploy.py \\olgwfap1\Transfer\semicircles
+
+    >>> folder = '//olgwfap1/Transfer/semicircles/'
+    >>> watch(folder=folder, _debug=True)  #doctest:+ELLIPSIS
+    2018-...-... ...:...:... //olgwfap1/Transfer/semicircles/
+    2018-...-... ...:...:... //olgwfap1/Transfer/semicircles\example-of-error.csv
+    2018-...-... ...:...:... //olgwfap1/Transfer/semicircles\example.csv
+    >>> import os
+    >>> for f in glob(op.join(folder, 'example.csv_semicircles.*')): os.remove(f)
+    >>> os.remove(op.join(folder, 'example-of-error.csv_error.txt'))
+    """
+    print(str(datetime.now())[:19], folder)
+    while True:
+        for csvfile in glob(op.join(folder, filetype)):
+            if not op.exists(csvfile+suffix) and not op.exists(csvfile+error):
+                try:
+                    print(str(datetime.now())[:19], csvfile)
+                    do_file(csvfile, suffix=suffix)
+                except Exception as e:
+                    open(csvfile+error, 'w').write(str(e))
+        if _debug: break
+        time.sleep(sleep)
+
+
 if __name__ == '__main__':
+    import sys
     import doctest
-    doctest.testmod()
-    _graphic_test()
+    if len(sys.argv) > 1:
+        """If this is called from command line with args, go into server mode."""
+        watch(*sys.argv[1:])
+    else:
+        """Otherwise run doctests and plot the file-based test."""
+        doctest.testmod()
+        _graphic_test()
