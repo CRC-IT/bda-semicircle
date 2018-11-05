@@ -1,7 +1,7 @@
 """
 Semicircles for approximation of drainage radius on a dip.
 
-Contact James Scarborough for CRC BDA
+Contact is James Scarborough for California Resources Corp - Big Data Analytics
 
 https://www.lfd.uci.edu/~gohlke/pythonlibs/#shapely
 pip install ...\GitHub\bda-semicircle\Shapely-1.6.4.post1-cp36-cp36m-win_amd64.whl
@@ -10,7 +10,7 @@ import shapely.geometry
 import math
 
 
-def semicircle(origin, radius, rotation):
+def semicircle(x, y, radius, rotation):
     """Return semicircle polygon facing the Up Dip, as degrees counter clockwise from east.
 
     The tactic is make a circle, make a square, rotate and move the square, use that to clip off half the circle.
@@ -23,18 +23,17 @@ def semicircle(origin, radius, rotation):
     >>> len(list(circle.exterior.coords))
     66
 
-    >>> semi = semicircle((0, 0), 1.0, 10)
+    >>> semi = semicircle(0, 0, 1.0, 10)
     >>> semi  #doctest:+ELLIPSIS
     <shapely.geometry.polygon.Polygon object at 0x...>
     >>> len(list(semi.exterior.coords))
     36
     """
-    circle = shapely.geometry.Point(origin).buffer(radius)
+    circle = shapely.geometry.Point(x, y).buffer(radius)
     square = shapely.geometry.box(*circle.bounds)
     clip = shapely.affinity.rotate(square, rotation)
     radians = math.radians(rotation)
-    offsets_xy = (-math.cos(radians), -math.sin(radians))
-    clip = shapely.affinity.translate(clip, *offsets_xy)
+    clip = shapely.affinity.translate(clip, xoff=-math.cos(radians), yoff=-math.sin(radians))
     semi = circle.difference(clip)  # Circle - Square = Semicircle
     return semi
 
@@ -50,11 +49,11 @@ def _graphic_test():
         x, y = ob.xy
         ax.plot(x, y, color=color, linewidth=linewidth, solid_capstyle='round', zorder=1)
 
-    origin, radius, rotation = (0, 0), 1.0, 10
-    semi = semicircle(origin, radius, rotation)
+    x, y, radius, rotation = 0, 0, 1.0, 10
+    semi = semicircle(x, y, radius, rotation)
     plot_line(ax, semi.exterior, color=BLUE, linewidth=10)
 
-    circle = shapely.geometry.Point(origin).buffer(radius)
+    circle = shapely.geometry.Point(x, y).buffer(radius)
     plot_line(ax, circle.exterior)
     plot_line(ax, shapely.geometry.box(*circle.bounds).exterior)
     pyplot.show()
