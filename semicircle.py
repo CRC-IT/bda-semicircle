@@ -8,6 +8,7 @@ pip install ...\GitHub\bda-semicircle\Shapely-1.6.4.post1-cp36-cp36m-win_amd64.w
 """
 import shapely.geometry
 import math
+import numpy as np
 
 
 def semicircle(x, y, radius, rotation):
@@ -28,12 +29,24 @@ def semicircle(x, y, radius, rotation):
     <shapely.geometry.polygon.Polygon object at 0x...>
     >>> len(list(semi.exterior.coords))
     36
+    >>> semi.area / circle.area
+    0.49999999999999994
+
+    >>> real = semicircle(6253790.414, 2353831.202, 12, 45)
+    >>> real.area
+    225.83149130302806
+    >>> math.pi * 12**2 / 2  # half of pi*r^2
+    226.1946710584651
     """
+    if any(np.isnan([x, y, radius, rotation])) or not radius:
+        "User file may have blanks (NaN) or zero radius. 'None' is best for Shapefile export"
+        return None
     circle = shapely.geometry.Point(x, y).buffer(radius)
     square = shapely.geometry.box(*circle.bounds)
     clip = shapely.affinity.rotate(square, rotation)
     radians = math.radians(rotation)
-    clip = shapely.affinity.translate(clip, xoff=-math.cos(radians), yoff=-math.sin(radians))
+    clip = shapely.affinity.translate(clip, xoff=-math.cos(radians) * radius,
+                                            yoff=-math.sin(radians) * radius)
     semi = circle.difference(clip)  # Circle - Square = Semicircle
     return semi
 

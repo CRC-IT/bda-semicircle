@@ -19,7 +19,7 @@ import geopandas as gpd
 from semicircle import semicircle
 
 
-def do_file(csvfile, suffix='_semicircles.shp', to_file=True):
+def do_file(csvfile, suffix='_semicircles.shp', cols=['x', 'y', 'radius', 'rotation'], to_file=True):
     """Import csv file of xy's and parameters then produce a semicircle shapefile.
 
     >>> print(open('example.csv').read())
@@ -43,9 +43,19 @@ def do_file(csvfile, suffix='_semicircles.shp', to_file=True):
     Name: 0, dtype: object
     >>> import os; from glob import glob
     >>> for f in glob('example.csv_semicircles.*'): os.remove(f)
+
+    >>> print(open('example-real.csv').read())
+    x,y,UWI,Well Name,Zone ,radius,rotation
+    6254513.29,2353569.785,040000,,Zone,,
+    6253790.414,2353831.202,040000,SEC,Zone A1,12,45
+    6254341.15,2353978.79,040000,SEC,,0,45
+    <BLANKLINE>
+    >>> real = do_file('example-real.csv', to_file=False)
+    >>> [poly is None or poly.area for poly in real['geometry']]
+    [True, 225.83149130302806, True]
     """
-    gdf = gpd.GeoDataFrame(pd.read_csv(csvfile))
-    semicircles = [semicircle(r['x'], r['y'], r['radius'], r['rotation']) for i, r in gdf.iterrows()]
+    gdf = gpd.GeoDataFrame(pd.read_csv(csvfile, thousands=','))  # User's Excel formatted with thousands separator
+    semicircles = [semicircle(*[row[col] for col in cols]) for i, row in gdf.iterrows()]
     gdf['geometry'] = semicircles
     if to_file: gdf.to_file(csvfile+suffix)
     return gdf
@@ -66,7 +76,7 @@ import time
 
 def watch(folder='//olgwfap1/Transfer/semicircles/', filetype='*.csv',
           suffix='_semicircles.shp', error='_error.txt', sleep=10, _debug=False):
-    """Watch a folder for new files to process.
+    r"""Watch a folder for new files to process.
 
     Runs from the command line like:
     C:\Users\scarborj\Documents\GitHub\bda-semicircle>\Users\scarborj\Documents\venv\bda-semicircle\
@@ -76,7 +86,9 @@ def watch(folder='//olgwfap1/Transfer/semicircles/', filetype='*.csv',
     >>> watch(folder=folder, _debug=True)  #doctest:+ELLIPSIS
     2018-...-... ...:...:... //olgwfap1/Transfer/semicircles/
     2018-...-... ...:...:... //olgwfap1/Transfer/semicircles\example-of-error.csv
+    2018-...-... ...:...:... error
     2018-...-... ...:...:... //olgwfap1/Transfer/semicircles\example.csv
+    2018-...-... ...:...:... done
     >>> import os
     >>> for f in glob(op.join(folder, 'example.csv_semicircles.*')): os.remove(f)
     >>> os.remove(op.join(folder, 'example-of-error.csv_error.txt'))
@@ -85,11 +97,13 @@ def watch(folder='//olgwfap1/Transfer/semicircles/', filetype='*.csv',
     while True:
         for csvfile in glob(op.join(folder, filetype)):
             if not op.exists(csvfile+suffix) and not op.exists(csvfile+error):
+                print(str(datetime.now())[:19], csvfile)
                 try:
-                    print(str(datetime.now())[:19], csvfile)
                     do_file(csvfile, suffix=suffix)
+                    print(str(datetime.now())[:19], 'done')
                 except Exception as e:
                     open(csvfile+error, 'w').write(str(e))
+                    print(str(datetime.now())[:19], 'error')
         if _debug: break
         time.sleep(sleep)
 
