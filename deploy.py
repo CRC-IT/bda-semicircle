@@ -13,7 +13,6 @@ pip install ...\GitHub\bda-semicircle\Shapely-1.6.4.post1-cp36-cp36m-win_amd64.w
     geopandas-0.4.0-py2.py3-none-any.whl
     descartes-1.1.0-py2.py3-none-any.whl
 """
-
 import pandas as pd
 import geopandas as gpd
 from semicircle import semicircle
@@ -96,14 +95,17 @@ def watch(folder='//olgwfap1/Transfer/semicircles/', filetype='*.csv',
     """
     _log(folder)
     while True:
-        for csvfile in glob(op.join(folder, filetype)):
-            if not op.exists(csvfile+suffix) and not op.exists(csvfile+error):
-                _log(csvfile)
+        for csv in glob(op.join(folder, filetype)):
+            "If there is no done file, run it. Or if there is a done file but it's old, run it again."
+            if ((not op.exists(csv+suffix) and not op.exists(csv+error)) or
+                (op.exists(csv+suffix) and newer(csv, csv+suffix)) or
+                (op.exists(csv+error)  and newer(csv, csv+error))):
+                _log(csv)
                 try:
-                    do_file(csvfile, suffix=suffix)
+                    do_file(csv, suffix=suffix)
                     _log('done')
                 except Exception as e:
-                    open(csvfile+error, 'w').write(str(e))
+                    open(csv+error, 'w').write(str(e))
                     _log('error')
         if _debug: break
         time.sleep(sleep)
@@ -111,6 +113,14 @@ def watch(folder='//olgwfap1/Transfer/semicircles/', filetype='*.csv',
 
 def _log(message):
     print(str(datetime.now())[:19], message)
+
+def newer(newerthan, older):
+    """Does the first file have a more recent timestamp than the second?
+
+    >>> newer('example-of-error.csv', 'example.csv')
+    True
+    """
+    return op.getmtime(newerthan) > op.getmtime(older)
 
 
 if __name__ == '__main__':
