@@ -1,0 +1,1 @@
+..\..\venv\bda-semicircle\Scripts\python.exe deploy.py \\olgwfap1\Transfer\semicircles
