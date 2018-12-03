@@ -68,6 +68,7 @@ def _graphic_test():
     plt.show()
 
 
+import os
 import os.path as op
 from glob import glob
 from datetime import datetime
@@ -89,12 +90,14 @@ def watch(folder='//olgwfap1/Transfer/semicircles/', filetype='*.csv',
     2018-...-... ...:...:... error
     2018-...-... ...:...:... //olgwfap1/Transfer/semicircles\example.csv
     2018-...-... ...:...:... done
-    >>> import os
     >>> for f in glob(op.join(folder, 'example.csv_semicircles.*')): os.remove(f)
     >>> os.remove(op.join(folder, 'example-of-error.csv_error.txt'))
     """
     _log(folder)
     while True:
+        if not op.exists(folder):
+            "Temp drive gets wiped on Fridays."
+            os.mkdir(folder)
         for csv in glob(op.join(folder, filetype)):
             "If there is no done file, run it. Or if there is a done file but it's old, run it again."
             if ((not op.exists(csv+suffix) and not op.exists(csv+error)) or
